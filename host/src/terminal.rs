@@ -14,6 +14,7 @@ use crossterm::{
 use std::io::stdout;
 use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
+use core::{Coord, Ship, SHIP_COUNT};
 
 
 
@@ -70,7 +71,7 @@ fn place_ship(
     board: &mut [[char; 10]; 10],
     input: &str,
     size: usize,
-) -> Result<(), String> {
+) -> Result<(usize,usize,usize,usize), String> {
     let parts: Vec<&str> = input.trim().split(',').collect();
 
     if parts.len() != 4 {
@@ -126,7 +127,7 @@ fn place_ship(
         board[r][c] = 'S';
     }
 
-    Ok(())
+    Ok((r1, c1, r2, c2))
 }
 
 
@@ -163,7 +164,7 @@ fn create_layout(
         .to_vec()
 }
 
-pub fn setup_player_terminal(player: usize) -> ([[char; 10]; 10], String) {
+pub fn setup_player_terminal(player: usize) -> ([[char; 10]; 10], String,[Ship;SHIP_COUNT]) {
     execute!(stdout(), Clear(ClearType::All), Clear(ClearType::Purge)).unwrap();
     enable_raw_mode().unwrap();
 
@@ -177,6 +178,7 @@ pub fn setup_player_terminal(player: usize) -> ([[char; 10]; 10], String) {
     let mut salt = String::new();
     let mut grid_text = draw_grid(&board);
 
+    let mut ships = [Ship::default(); SHIP_COUNT];
 
     let mut stage = 0;
     let mut ship_index = 0;
@@ -258,7 +260,11 @@ pub fn setup_player_terminal(player: usize) -> ([[char; 10]; 10], String) {
                         1 => {
                             let (name, size) = SHIPS[ship_index];
                             match place_ship(&mut board, &input, size) {
-                                Ok(_) => {
+                                Ok((r1, c1, r2, c2)) => {
+                                    ships[ship_index] = Ship {
+                                    start: Coord { row: r1, col: c1 },
+                                    end: Coord { row: r2, col: c2 },
+                                    };
                                     grid_text = draw_grid(&board);
                                     ship_index += 1;
                                     if ship_index >= SHIPS.len() {
@@ -288,7 +294,7 @@ pub fn setup_player_terminal(player: usize) -> ([[char; 10]; 10], String) {
 
     disable_raw_mode().unwrap();
 
-    (board, salt)
+    (board, salt,ships)
 }
 
 
@@ -467,9 +473,13 @@ pub fn rounds_terminal(
                     if parts.len() == 2 {
                         if let (Ok(row), Ok(col)) = (parts[0].trim().parse::<usize>(), parts[1].trim().parse::<usize>()) {
                             if row >= 1 && row <= 10 && col >= 1 && col <= 10 {
+                                if br[player-1][row - 1][col - 1]=='.' {
                                 input.clear();
                                 disable_raw_mode().unwrap();
                                 return [row - 1, col - 1];
+                                }else{
+                                    status_msg = "already shooted this place".to_string();
+                                }
                             } else {
                                 status_msg = "coordinates must be between 1 and 10".to_string();
                             }

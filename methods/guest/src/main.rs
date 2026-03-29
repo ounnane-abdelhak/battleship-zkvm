@@ -1,13 +1,22 @@
 use risc0_zkvm::guest::env;
+use core::VerifyInputHM;
+use sha2::{Sha256, Digest};
+
 
 fn main() {
-    // TODO: Implement your guest code here
+    let mut hasher = Sha256::new();
+    let inputs: VerifyInputHM = env::read();
+    let is_hit = inputs.board[inputs.guess[0]][inputs.guess[1]];
+    for i in inputs.board.iter(){
+        for j in i.iter(){
+            hasher.update(&[*j as u8]);
+        }
+    }
+    hasher.update(&inputs.salt.as_bytes());
+    assert_eq!(inputs.commitment, result, "commitment mismatch!");
 
-    // read the input
-    let input: u32 = env::read();
+env::commit(&(is_hit, result, inputs.guess,inputs.round));
 
-    // TODO: do something with the input
 
-    // write public output to the journal
-    env::commit(&input);
+
 }

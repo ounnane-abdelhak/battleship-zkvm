@@ -1,8 +1,9 @@
 #![no_main]
 use risc0_zkvm::guest::{entry, env};
 entry!(main);
-use core::{VerifyInputSS,Ship};
-use sha2::{Sha256, Digest};
+use core::{VerifyInput,Ship};
+use risc0_zkvm::sha::rust_crypto::{Sha256, Digest};
+
 
 
 fn ship_is_sunk(board: &[[char; 10]; 10], ship: &Ship) -> bool {
@@ -61,7 +62,7 @@ fn find_hit_ship(ships: &[Ship; 5], guess: [usize; 2]) -> Option<usize>{
 
 
 fn main() {
-    let input:VerifyInputSS = env::read();
+    let input:VerifyInput = env::read();
 
     let board:[[char; 10]; 10]=input.board;
     let cboard: [[char; 10]; 10]=input.cboard;
@@ -70,6 +71,7 @@ fn main() {
     let commitment: [u8; 32]=input.commitment;
     let round: usize=input.round;
     let ships: [Ship;5]=input.ships;
+    let pre_round_commitment=input.pre_round_commitment;
 
 
     let mut hasher = Sha256::new();
@@ -99,6 +101,24 @@ fn main() {
     assert_eq!(commitment, result, "commitment mismatch");
 
 
+
+    let mut pre_round_commit_hasher=Sha256::new();
+
+    for i in cboard.iter(){
+        for j in i.iter(){
+            pre_round_commit_hasher.update([*j as u8]);
+        }
+    }
+
+    pre_round_commit_hasher.update((round as u64).to_le_bytes());
+
+    pre_round_commit_hasher.update(&commitment);    
+
+    let pre_round_commit: [u8; 32] = pre_round_commit_hasher.finalize().into();
+
+    assert_eq!(pre_round_commitment,pre_round_commit,"not same pre-round commitment");
+
+
     let s = find_hit_ship(&ships, guess).expect("hit must belong to a ship");
 
 
@@ -111,6 +131,6 @@ fn main() {
     }
 
 
-    env::commit(&(sunk,result,s,win,round,guess,cboard));
+    env::commit(&(sunk,result,s,win,round,guess,cboard,pre_round_commit));
     
 }

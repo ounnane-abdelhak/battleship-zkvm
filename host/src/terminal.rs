@@ -23,6 +23,7 @@ pub struct VerificationResult {
     pub proof_valid: bool,
     pub commitment: String,
     pub ship_sunk: Option<String>,
+     pub sunk_commitment: Option<String>,
 }
 
 const SHIPS: [(&str, usize); 5] = [
@@ -350,12 +351,12 @@ pub fn rounds_terminal(
             ], chunks[1]);
 
             let outer_block1 = Block::default()
-                .title(format!("  Player 1 board - commitment: {}  ", hashes[0]))
+                .title(format!("Player 1 board - commitment: {}  ", hashes[0]))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Double);
 
             let outer_block2 = Block::default()
-                .title(format!("  Player 2 board - commitment: {}  ", hashes[1]))
+                .title(format!("Player 2 board - commitment: {}  ", hashes[1]))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Double);
 
@@ -432,6 +433,14 @@ pub fn rounds_terminal(
                             None => Span::styled("None", Style::default().fg(Color::Gray)),
                         },
                     ]),
+                    Line::from(vec![
+                        Span::raw("  Sunk/NoSunk Commitment: "),
+                        match &v.sunk_commitment {
+                        Some(c) => Span::styled(c.clone(), Style::default().fg(Color::Cyan)),
+                        None => Span::styled("N/A (miss)", Style::default().fg(Color::Gray)),
+    },
+]),
+
                 ]);
 
                 let verify_widget = Paragraph::new(verify_text)
@@ -570,7 +579,7 @@ pub fn game_over_terminal(
                 Line::from(""),
                 Line::from(vec![
                     Span::styled(
-                        "  Anyone can verify: SHA256(board + salt) == commitment",
+                        "  Anyone can verify: SHA256(ships + board + salt) == commitment",
                         Style::default().fg(Color::Gray),
                     ),
                 ]),

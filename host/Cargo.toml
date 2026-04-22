@@ -5,9 +5,10 @@ edition = "2021"
 
 [dependencies]
 methods = { path = "../methods" }
-risc0-zkvm = { version = "^3.0.5" }
+risc0-zkvm = { version = "^3.0.5", features = ["prove"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = "1.0"
 ratatui = "0.26"
 crossterm = "0.27"
 core = { path = "../core" }
+sha2 = "0.10"
